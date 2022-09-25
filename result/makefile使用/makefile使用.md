@@ -22,9 +22,12 @@ make工具的安装：sudo apt install make
 ## 1.2.make与cmake
 不同平台有自己的make标准。如果软件想跨平台，必须要保证能够在不同平台编译。而如果使用上面的 Make 工具，就得为每一种标准写一次 Makefile ，这将是一件让人抓狂的工作。
 CMake就是针对上面问题所设计的工具：它首先允许开发者编写一种平台无关的 CMakeList.txt 文件来定制整个编译流程，然后再根据目标用户的平台进一步生成所需的本地化 Makefile 和工程文件，如 Unix 的 Makefile 或 Windows 的 Visual Studio 工程。从而做到“Write once, run everywhere”。
+cmake知识可参考：[cmake入门
+](https://www.cnblogs.com/codingbigdog/p/16459532.html)
 
 
 [参考](https://blog.csdn.net/qq_28038207/article/details/80791694)
+
 
 
 # 2.Makefile语法规则
@@ -104,8 +107,65 @@ make默认在工作目录中寻找名为GNUmakefile、makefile、Makefile的文�
 指定了make工具要实现的目标，目标可以是一个或多个（多个目标间用空格隔开）。
 
 
+
 ## 2.3.Makefile示例
-测试程序： test.c add.c sub.c mul.c div.c
+假设有测试程序： test.c add.c sub.c mul.c div.c，内容如下：
+```
+// add.c
+#include "sampleMath.h"
+ 
+int add(int i, int j)
+{
+	return i + j;
+}
+
+// div.c
+#include "sampleMath.h"
+
+int div(int i, int j)
+{
+    if (j != 0)
+        return i / j;
+    else
+        return 0;
+}
+
+// sub.c
+#include "sampleMath.h"
+ 
+int sub(int i, int j)
+{
+	return i-j;
+}
+
+// mul.c
+#include "sampleMath.h"
+ 
+int mul(int i, int j)
+{
+	return i*j;
+}
+
+// sampleMath.h
+int add(int i, int j);
+int mul(int i, int j);
+int sub(int i, int j);
+int div(int i, int j);
+
+// test.c
+#include <stdio.h>
+#include "sampleMath.h"
+ 
+int main(int argc, char *argv[]) 
+{
+	printf("1 + 2 = %d\n", add(1, 2));
+	printf("1/2 = %d\n", div(1, 2));
+	printf("1*2 = %d\n", mul(1, 2));
+	printf("1-2 = %d\n", sub(1, 2));
+	return 0;
+}
+```
+
 
 **1.最简单的Makefile**
 Makefile文件如下：
@@ -120,21 +180,21 @@ test:test.c add.c sub.c mul.c div.c
 Makefile文件如下：
 ```
 test:test.o add.o sub.o mul.o div.o
-    gcc test.o add.o sub.o mul.o div.o -o test
-​
+	gcc test.o add.o sub.o mul.o div.o -o test
 test.o:test.c
-    gcc -c test.c
+	gcc -c test.c -o test.o
 add.o:add.c
-    gcc -c add.c
+	gcc -c add.c -o add.o
 sub.o:sub.c
-    gcc -c sub.c
+	gcc -c sub.c -o sub.o
 mul.o:mul.c
-    gcc -c mul.c
+	gcc -c mul.c -o mul.o
 div.o:div.c
-    gcc -c div.c
+	gcc -c div.c -o div.o
 ```
-如果修改add.c文件，那么make命令只会重新编译add.c文件，其他文件不会重新编译。
-
+test依赖test.o add.o sub.o mul.o div.o，如果从当前目录中无法找到这些.o文件，那么就会自动在各条规则中是否有相匹配的目标。
+对于使用上述Makefile文件，如果修改add.c文件，那么make命令只会重新编译add.c文件，其他文件不会重新编译。
+但是这样的文件又长又臭，下面我们将逐步介绍简化的方法。
 
 ## 2.4.Makefile中的变量
 
@@ -155,34 +215,26 @@ $(变量名)或${变量名}
 - 变量几乎可在makefile的任何地方使用
  
 
-示例：
+第三个版本Makefile：
 
 ```
 #变量
 OBJS=add.o sub.o mul.o div.o test.o
 TARGET=test
-​
 $(TARGET):$(OBJS)
-    gcc $(OBJS) -o $(TARGET) 
-​
+	gcc $(OBJS) -o $(TARGET) 
 add.o:add.c
-    gcc -c add.c -o add.o
-​
+	gcc -c add.c -o add.o​
 sub.o:sub.c
-    gcc -c sub.c -o sub.o
-​
+	gcc -c sub.c -o sub.o
 mul.o:mul.c
-    gcc -c mul.c -o mul.o
-​
+	gcc -c mul.c -o mul.o
 div.o:div.c
-    gcc -c div.c -o div.o
-​
+	gcc -c div.c -o div.o
 test.o:test.c
-    gcc -c test.c -o test.o
-​
+	gcc -c test.c -o test.o
 clean:
-    rm -rf $(OBJS) $(TARGET)
-
+	rm -rf $(OBJS) $(TARGET)
 ```
 除了使用用户自定义变量，makefile中也提供了一些变量（变量名大写）供用户直接使用，我们可以直接对其进行赋值。
 > CC = gcc  # 选择gcc作为编译器
@@ -200,40 +252,29 @@ LDFLAGS : 链接器选项，如LDFLAGS = -L -l
 
 注意：自动变量只能在规则的命令中使用
 
-参考示例：
+第四个版本Makefile：
 ```
 #变量
 OBJS=add.o sub.o mul.o div.o test.o add.o
 TARGET=test
 CC=gcc
-​
-#$@: 表示目标。“眼睛代表目标”
-#$<: 表示第一个依赖
-#$^: 表示所有的依赖。“一把伞撑起了所有”代表所有依赖
-​
 $(TARGET):$(OBJS)    # 这里不能使用$^，因为自动变量只能在规则的命令中使用
-    $(CC) $^ -o $@   # 等价于#$(CC) $(OBJS) -o $(TARGET) 
-    echo $@
-    echo $<
-    echo $^
-​
+	$(CC) $^ -o $@   # 等价于#$(CC) $(OBJS) -o $(TARGET) 
+	echo $@          # 输出看看$@是不是目标
+	echo $<
+	echo $^
 add.o:add.c
-    $(CC) -c $< -o $@ 
-​
+	$(CC) -c $< -o $@ 
 sub.o:sub.c
-    $(CC) -c $< -o $@ 
-​
+	$(CC) -c $< -o $@ 
 mul.o:mul.c
-    $(CC) -c $< -o $@ 
-​
+	$(CC) -c $< -o $@ 
 div.o:div.c
-    $(CC) -c $< -o $@ 
-​
+	$(CC) -c $< -o $@ 
 test.o:test.c
-    $(CC) -c $< -o $@
-​
+	$(CC) -c $< -o $@
 clean:
-    rm -rf $(OBJS) $(TARGET)
+	rm -rf $(OBJS) $(TARGET)
 ```
 
 
@@ -242,7 +283,7 @@ clean:
 ```
 %.o:%.c
 ```
-Makefile第三个版本：
+第五个版本Makefile：
 ```
 OBJS=test.o add.o sub.o mul.o div.o
 TARGET=test
@@ -251,7 +292,12 @@ $(TARGET):$(OBJS)
 
 %.o:%.c               ​# 模式匹配所有的.o都依赖对应的.c
     gcc -c $< -o $@   # 将所有的.c生成对应的.o
+clean:
+    rm -rf $(OBJS) $(TARGET)
 ```
+
+
+
 
 # 3.Makefile中的函数
 ```
@@ -265,16 +311,17 @@ obj = $(patsubst %.c,%.o, $(src)) //把src变量里所有后缀为.c的文件替
 ```
 在makefile中所有的函数都是有返回值的。
 
-Makefile第四个版本：
+第六个版本Makefile：
 ```
 SRC=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRC))
 TARGET=test
 $(TARGET):$(OBJS)
     gcc $(OBJS) -o $(TARGET) 
-​
 %.o:%.c
     gcc -c $< -o $@
+clean:
+    rm -rf $(OBJS) $(TARGET)
 ```
 
 
@@ -286,11 +333,7 @@ make clean 如果当前目录下有同名clean文件，则不执行clean对应�
 声明目标为伪目标之后，makefile将不会该判断目标是否存在或者该目标是否需要更新，而是直接执行Makefile中的clean命令
 
 
-**clean命令中的特殊符号：**
-- “-”此条命令出错，make也会继续执行后续的命令。如:“-rm main.o”
-- “@”不显示命令本身,只显示结果。如:“@echo clean done”
- 
-Makefile第五个版本：
+第七个版本Makefile：
 ```
 SRC=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRC))
@@ -304,6 +347,9 @@ $(TARGET):$(OBJS)
 clean:
     -rm -rf $(OBJS) $(TARGET) # 最前面加了一个"-"，代表此条命令出错，make也会继续执行后续的命令
 ```
+**命令中的特殊符号：**
+- “-”此条命令出错，make也会继续执行后续的命令。如:“-rm main.o”
+- “@”不显示命令本身,只显示结果。如:“@echo clean done”
 
 总结： 一条规则，两个函数，三个变量。
 
@@ -311,24 +357,23 @@ clean:
 
 # 5.Makefile工作原理
 **1.生成目标**
-若想生成目标, 检查规则中的依赖条件是否存在,如不存在,则寻找是否有规则用来生成该依赖文件
+若想生成目标, 检查规则中的依赖条件（依赖文件）是否存在,如不存在,则寻找是否有规则用来生成该依赖文件
 ![](makefile使用_img/1617829-20220512191937952-1478668155.png)
 
 比如：
 ```
 test:test.o add.o sub.o mul.o div.o
-    gcc test.o add.o sub.o mul.o div.o -o test
-​
+	gcc test.o add.o sub.o mul.o div.o -o test
 test.o:test.c
-    gcc -c test.c
+	gcc -c test.c -o test.o
 add.o:add.c
-    gcc -c add.c
+	gcc -c add.c -o add.o
 sub.o:sub.c
-    gcc -c sub.c
+	gcc -c sub.c -o sub.o
 mul.o:mul.c
-    gcc -c mul.c
+	gcc -c mul.c -o mul.o
 div.o:div.c
-    gcc -c div.c
+	gcc -c div.c -o div.o
 ```
 上述代码，目标test依赖test.o，但是目录下没有test.o文件，此时就在Makefile中寻找是否有目标为test.o的规则，最后通过规则生成test.o。
 先在目录下查找test.o，如果没有找到，再去查找是否有生成test.o的规则。

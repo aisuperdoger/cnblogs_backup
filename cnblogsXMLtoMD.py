@@ -5,8 +5,7 @@ import re
 
  # 将文章中图片下载到images_path，并修改md文件中的图片路径为本地
 def  downloadImage(descirption,dir_path,images_path):
-    
-    images_links = re.findall("https://img.*?.png",descirption)
+    images_links = re.findall("https://.*?\.cnblogs.com/blog/.*?/.*?/.*?.png",descirption)
     for i in images_links:
         # 获取网络图片资源
         r = requests.get(i)

@@ -3,7 +3,7 @@
 博文内容：
 # 0.源码编译安装ffmpeg
 
-建议安装4.19版本，因为其他版本没有暂时函数说明文档。
+我安装ffmpeg版本是ffmpeg-4.2.7。
 建议直接参考这篇文章[ubuntu20源码编译安装ffmpeg](https://blog.csdn.net/H_Zhang/article/details/123684216)，这篇文档进行的是最简单的安装。如果按照[官方按照教程](https://trac.ffmpeg.org/wiki/CompilationGuide)进行按照可能会由于依赖问题，而无法使用。
 
 如果参考[官方安装教程](https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu)进行源码安装。在按照官方安装教程进行安装的时候，需要安装各种库，可以使用命令sudo apt-get install安装库，就尽量使用sudo apt-get install来安装。有些不能使用sudo apt-get install安装的库，就使用教程中的源码编译方式进行安装。

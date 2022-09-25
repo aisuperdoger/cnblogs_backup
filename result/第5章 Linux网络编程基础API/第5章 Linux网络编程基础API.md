@@ -1,7 +1,14 @@
 原文链接：http://www.cnblogs.com/codingbigdog/archive/2022/05/07/16243321.html
 提交日期：Sat, 07 May 2022 09:12:00 GMT
 博文内容：
-其结合《Linux高性能服务器编程 by 游双》进行阅读。
+请结合《Linux高性能服务器编程 by 游双》进行阅读。
+
+
+
+
+
+
+
 #1.判断机器字节序
 ```
 #include <stdio.h>
@@ -71,7 +78,7 @@ static void handle_term( int sig )
 
 int main( int argc, char* argv[] )
 {
-    signal( SIGTERM, handle_term );
+    signal( SIGTERM, handle_term ); // 如果收到ctrl+c的种子信号，就会终止程序
 
     if( argc <= 3 )
     {

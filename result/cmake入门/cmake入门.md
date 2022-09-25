@@ -62,9 +62,12 @@ target_link_libraries(target library1<debug | optimized> library2...)  为 targe
 # 将hello动态库文件链接到可执行文件main
 target_link_libraries(main hello)
 
-add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])  向当前工程添加存放源文件的子目录，并可以指定中间二进制和目标二进制存放的位置
+# 当前目录中有一个子项目，子项目中有一个CMakeLists.txt文件，用于构建子项目。此时在主项目的CMakeLists.txt文件中就要
+# 使用add_subdirectory说明这个子项目的存在，这样在执行主项目的CMakeLists.txt文件的时候，子项目的CMakeLists.txt也会被执行
+add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])  
 # 添加src子目录，src中需有一个CMakeLists.txt
 add_subdirectory(src)
+add_subdirectory的具体使用可参考：https://www.jianshu.com/p/07acea4e86a3
   
 aux_source_directory(dir VARIABLE) 发现一个目录下所有的源代码文件并将列表存储在一个变量中，这个指令临时被用来自动构建源文件列表
 # 定义SRC变量，其值为当前目录下所有的源代码文件
@@ -141,7 +144,7 @@ make
 
 
 # 2 实例
-## 2.1 实例1
+## 2.1 内部构建和外部构建
 helloworld.cpp:
 ```
 #include <iostream>
@@ -219,7 +222,7 @@ make
 外部构建就是将cmake生成的中间文件、Makefile和可执行文件都放在build目录中了。
 
 
-## 2.2 实例2
+## 2.2 动态库链接和加载
 实例2的目录结构如下所示：
 ```
 tree .   # tree .命令获取当前目录的结构
@@ -250,7 +253,7 @@ int main(int argc, char **argv)
 ```
 swap.h:
 ```
-#pragma once   # 用于防止头文件的重复包含
+#pragma once     // 用于防止头文件的重复包含
 #include <iostream>
 
 class swap
@@ -293,7 +296,11 @@ project(SWAP)
 
 include_directories(include)  # 等价于-I include
 
-add_executable(main_cmake main.cpp src/swap.cpp)
+add_library(swap SHARED src/swap.cpp) # 生成动态库
+
+add_executable(main_cmake main.cpp)   # 生成可执行文件
+
+target_link_libraries(main_cmake swap) # 链接库文件
 ```
 编译：
 ```
@@ -308,10 +315,11 @@ make
 
 
 
-
-
 # 3  CMakeLists.txt文件学习
-## 3.1 实例一
+
+下面是几个实际项目中的CMakeLists.txt文件，可以看看进行学习，遇到没学过的就去查一查。
+
+## 3.1 实例1
 
 CMakeLists.txt:
 ```
@@ -321,10 +329,11 @@ project(SOLIDERFIRE)                             # 项目名为SOLIDERFIRE
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")  # -Wall：输出警告的信息
                                                  # "${CMAKE_CXX_FLAGS} -Wall"表示在原有的CMAKE_CXX_FLAGS后添加-Wall
+                                                 # ${CMAKE_CXX_FLAGS}是g++编译选项
 
 set(CMAKE_BUILD_TYPE Debug)    # 让输出的可执行文件是可debug的
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include) # 头文件所在目录
 
 add_executable(my_cmake_exe main.cpp src/Gun.cpp src/Solider.cpp)  # 对main.cpp、src/Gun.cpp和src/Solider.cpp三个cpp文件进行编译
 ```
@@ -336,22 +345,22 @@ cmake_minimum_required(VERSION 3.0)
 
 set(SOURCE_FILES main.c)
 
-project(TEST2)                             # 项目名为SOLIDERFIRE
+project(TEST2)                             # 项目名为TEST2
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")  # -Wall：输出警告的信息
-# "${CMAKE_CXX_FLAGS} -Wall"表示在原有的CMAKE_CXX_FLAGS后添加-Wall
+                                                 # "${CMAKE_CXX_FLAGS} -Wall"表示在原有的CMAKE_CXX_FLAGS后添加-Wall
 
 set(CMAKE_BUILD_TYPE Debug)    # 让输出的可执行文件是可debug的
 
 include_directories(${CMAKE_SOURCE_DIR}/ffmpeg/include)
 
 link_directories(
-		${CMAKE_SOURCE_DIR}/ffmpeg/lib/    # CMakeLists.txt中似乎不需要-l用来指定编译时具体需要什么库
+		${CMAKE_SOURCE_DIR}/ffmpeg/lib/    # 指明库文件所在目录
 )
 
 add_executable(my_cmake_exe avframe.c avpacket.c  main.c )  # 对avframe.c avpacket.c  main.c 三个cpp文件进行编译
 
-target_link_libraries(my_cmake_exe avcodec avutil m) # 指定运行时需要连接的库
+target_link_libraries(my_cmake_exe avcodec avutil m) # 指明具体链接的库的名称
 ```
 
 
@@ -369,23 +378,15 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_BUILD_TYPE Debug)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/workspace)
 
-# 如果你是不同显卡，请设置为显卡对应的号码参考这里：https://developer.nvidia.com/zh-cn/cuda-gpus#compute
 set(CUDA_GEN_CODE "-gencode=arch=compute_75,code=sm_75")
 
-# 如果你的opencv找不到，可以自己指定目录
 set(OpenCV_DIR   "/data/datav/expstation/lean/opencv4.2.0/lib/cmake/opencv4/")
 
 set(CUDA_DIR     "/data/sxai/lean/cuda-10.2")
 set(CUDNN_DIR    "/data/sxai/lean/cudnn8.2.2.26")
 set(TENSORRT_DIR "/data/sxai/lean/TensorRT-8.0.1.6-cuda10.2-cudnn8.2")
 
-# set(CUDA_DIR     "/data/sxai/lean/cuda-10.2")
-# set(CUDNN_DIR    "/data/sxai/lean/cudnn7.6.5.32-cuda10.2")
-# set(TENSORRT_DIR "/data/sxai/lean/TensorRT-7.0.0.11")
 
-# set(CUDA_DIR     "/data/sxai/lean/cuda-11.1")
-# set(CUDNN_DIR    "/data/sxai/lean/cudnn8.2.2.26")
-# set(TENSORRT_DIR "/data/sxai/lean/TensorRT-7.2.1.6")
 
 find_package(CUDA REQUIRED)
 find_package(OpenCV)
@@ -398,8 +399,7 @@ include_directories(
     ${CUDNN_DIR}/include
 )
 
-# 切记，protobuf的lib目录一定要比tensorRT目录前面，因为tensorRTlib下带有protobuf的so文件
-# 这可能带来错误
+
 link_directories(
     ${TENSORRT_DIR}/lib
     ${CUDA_DIR}/lib64
@@ -415,7 +415,7 @@ cuda_add_library(cucodes SHARED ${cuda_srcs})
 
 add_executable(pro ${cpp_srcs} ${c_srcs})
 
-# 如果提示插件找不到，请使用dlopen(xxx.so, NOW)的方式手动加载可以解决插件找不到问题
+
 target_link_libraries(cucodes nvinfer nvonnxparser)
 target_link_libraries(cucodes cuda cublas cudart cudnn)
 target_link_libraries(pro ${OpenCV_LIBS})
@@ -430,6 +430,6 @@ add_custom_target(
 ```
 
 
-gcc中的-Wl,-rpath对应于cmake中的哪个东西？？
+
 
 参考：https://www.bilibili.com/video/BV1fy4y1b7TC、微信公众号：VSCode、bilibili ：xiaobing1016

@@ -5,6 +5,7 @@
 
 通过git clone https://github.com/pybind/pybind11.git 下载源码，可以发现源码中并没有cpp文件，只有.h文件，也就是说pybind11将实现的代码都放进了.h文件中了。所以pybind11其实是不用进行编译安装，就可以使用的，直接通过include相关头文件就可以。
 
+# python调用C++程序的实例：
 pyadd.cpp：
 ```
 #include <pybind11/pybind11.h>
@@ -25,7 +26,7 @@ PYBIND11_MODULE(pyadd, m) {
 ```
 将pyadd编译成动态库：
 ```
-g++ test.cpp -I ./ -I /home/ubuntu1/anaconda3/envs/test/include/python3.9 -L /home/ubuntu1/anaconda3/envs/test/lib -l python3.9  -fPIC -shared  -o pyadd.so 
+g++ pyadd.cpp -I ./ -I /home/ubuntu1/anaconda3/envs/test/include/python3.9 -L /home/ubuntu1/anaconda3/envs/test/lib -l python3.9  -fPIC -shared  -o pyadd.so 
 ```
 第一个-I用于指明头文件pybind11.h位置，第二个-I指明Python.h所在位置。
 这里动态库的名字为pyadd.so，那么在python程序中使用“import pyadd”进行导入，如：
